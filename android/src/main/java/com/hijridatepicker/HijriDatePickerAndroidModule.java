@@ -7,7 +7,7 @@ import android.app.DialogFragment;
 import android.app.FragmentManager;
 import android.content.DialogInterface;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 import android.widget.DatePicker;
 
 import com.facebook.react.bridge.Promise;
@@ -103,18 +103,21 @@ public class HijriDatePickerAndroidModule extends ReactContextBaseJavaModule {
      *                dismiss, year, month and date are undefined.
      */
     @ReactMethod
-    public void open(@Nullable final ReadableMap options, Promise promise) {
+    public void open(@Nullable final ReadableMap options, final Promise promise) {
         try {
-            Activity activity = getCurrentActivity();
+           final Activity activity = getCurrentActivity();
             if (activity == null) {
                 promise.reject(ERROR_NO_ACTIVITY, "Tried to open a DatePicker dialog while not attached to an Activity");
                 return;
             }
             // We want to support both android.app.Activity and the pre-Honeycomb FragmentActivity
             // (for apps that use it for legacy reasons). This unfortunately leads to some code duplication.
-            if (activity instanceof android.support.v4.app.FragmentActivity) {
-                android.support.v4.app.FragmentManager fragmentManager = ((android.support.v4.app.FragmentActivity) activity).getSupportFragmentManager();
-                android.support.v4.app.DialogFragment oldFragment = (android.support.v4.app.DialogFragment) fragmentManager.findFragmentByTag(FRAGMENT_TAG);
+            activity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+            if (activity instanceof androidx.fragment.app.FragmentActivity) {
+                androidx.fragment.app.FragmentManager fragmentManager = ((androidx.fragment.app.FragmentActivity) activity).getSupportFragmentManager();
+                androidx.fragment.app.DialogFragment oldFragment = (androidx.fragment.app.DialogFragment) fragmentManager.findFragmentByTag(FRAGMENT_TAG);
                 if (oldFragment != null) {
                     oldFragment.dismiss();
                 }
@@ -149,12 +152,14 @@ public class HijriDatePickerAndroidModule extends ReactContextBaseJavaModule {
                 fragment.setOnExceptionListener(listener);
                 fragment.show(fragmentManager, FRAGMENT_TAG);
             }
+        }
+        });
         } catch (Exception e) {
             promise.reject(ERROR_OPEN, "Exception happened while executing open method, details: " + e.getMessage());
         }
     }
 
-    private Bundle createFragmentArguments(ReadableMap options, Promise promise) {
+    private Bundle createFragmentArguments(ReadableMap options, final Promise promise) {
         final Bundle args = new Bundle();
         try {
             if (options.hasKey(ARG_DATE) && !options.isNull(ARG_DATE)) {
@@ -190,7 +195,7 @@ public class HijriDatePickerAndroidModule extends ReactContextBaseJavaModule {
         return stringList;
     }
 
-    private boolean parseOptionsWithKey(String ARG_KEY, ReadableMap options, Bundle args, Promise promise) {
+    private boolean parseOptionsWithKey(String ARG_KEY, ReadableMap options, Bundle args, final Promise promise) {
         ReadableType argDateType = options.getType(ARG_KEY);
         if (ReadableType.String.equals(argDateType)) {
             try {
@@ -232,7 +237,7 @@ public class HijriDatePickerAndroidModule extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void convertHijriDateStrToGregorianMilliseconds(String hijriDate, Promise promise) {
+    public void convertHijriDateStrToGregorianMilliseconds(String hijriDate, final Promise promise) {
         try {
             double milliseconds = convertHijriDateToGregorianMilliseconds(hijriDate);
             promise.resolve(milliseconds);
@@ -247,7 +252,7 @@ public class HijriDatePickerAndroidModule extends ReactContextBaseJavaModule {
      * @return hijri date at the format of "dd-MM-yyyy"
      */
     @ReactMethod
-    public void convertMillisecondsToHijriDate(double milliseconds, Promise promise) {
+    public void convertMillisecondsToHijriDate(double milliseconds, final Promise promise) {
 
         try {
             UmmalquraCalendar ummalquraCalendar = new UmmalquraCalendar();
